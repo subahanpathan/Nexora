@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  username      String    @unique
+  password      String?
+  image         String?
+  bio           String?
+  role          UserRole  @default(USER)
+  verified      Boolean   @default(false)
+  reputation    Int       @default(0)
+  
+  posts         Post[]
+  comments      Comment[]
+  votes         Vote[]
+  bookmarks     Bookmark[]
+  
+  // Follows system
+  following     Follow[]  @relation("Following")
+  followers     Follow[]  @relation("Followers")
+  
+  // Notifications
+  notifications Notification[]
+  
+  // Membership in communities
+  communities   CommunityMember[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  follower    User     @relation("Following", fields: [followerId], references: [id])
+  following   User     @relation("Followers", fields: [followingId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@id([followerId, followingId])
+}
+
+model Community {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  slug        String      @unique
+  description String?
+  image       String?
+  banner      String?
+  color       String?     // Gradient or hex
+  
+  posts       Post[]
+  members     CommunityMember[]
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model CommunityMember {
+  userId      String
+  communityId String
+  user        User      @relation(fields: [userId], references: [id])
+  community   Community @relation(fields: [communityId], references: [id])
+  role        UserRole  @default(USER)
+  createdAt   DateTime  @default(now())
+
+  @@id([userId, communityId])
+}
+
+model Post {
+  id          String      @id @default(cuid())
+  title       String
+  content     String      @db.Text
+  imageUrl    String?
+  imageLabel  String?
+  hiring      Boolean     @default(false)
+  tag         String?
+  
+  community   Community   @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  communityId String
+  
+  author      User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId    String
+  
+  comments    Comment[]
+  votes       Vote[]
+  bookmarks   Bookmark[]
+  
+  // AI summary field
+  summary     String?     @db.Text
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([communityId])
+  @@index([authorId])
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  content   String    @db.Text
+  
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+  
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId  String
+  
+  // Nested replies
+  parentId  String?
+  parent    Comment?  @relation("CommentToComment", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentToComment")
+  
+  votes     Vote[]
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([postId])
+  @@index([authorId])
+  @@index([parentId])
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  type      Int      // 1 for upvote, -1 for downvote
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String?
+  
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId String?
+
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+}
+
+model Bookmark {
+  userId    String
+  postId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, postId])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  type        String   // "REPLY", "UPVOTE", "FOLLOW", "AI_INSIGHT"
+  title       String
+  content     String
+  link        String?
+  read        Boolean  @default(false)
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
