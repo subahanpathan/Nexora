@@ -6,6 +6,8 @@ import { authOptions } from "@/lib/auth-options";
 import { PostSchema } from "@/lib/validators";
 import { revalidatePath } from "next/cache";
 
+import { ExtendedPost } from "@/lib/types";
+
 export async function createPost(data: unknown) {
   const session = await getServerSession(authOptions);
   if (!session) throw new Error("Unauthorized");
@@ -50,8 +52,8 @@ export async function getPosts({
   communityId?: string;
   authorId?: string;
   sort?: string;
-}) {
-  let orderBy: unknown = { createdAt: "desc" };
+}): Promise<{ posts: ExtendedPost[], nextCursor: string | undefined }> {
+  let orderBy: any = { createdAt: "desc" };
   
   if (sort === "top") {
     orderBy = {
@@ -95,14 +97,14 @@ export async function getPosts({
     },
   });
 
-  let nextCursor: typeof cursor | undefined = undefined;
+  let nextCursor: string | undefined = undefined;
   if (posts.length > limit) {
     const nextItem = posts.pop();
     nextCursor = nextItem?.id;
   }
 
   return {
-    posts,
+    posts: posts as ExtendedPost[],
     nextCursor,
   };
 }

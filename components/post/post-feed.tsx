@@ -27,10 +27,10 @@ export function PostFeed({
     hasNextPage,
   } = useInfiniteQuery({
     queryKey: ["posts", communityId, authorId],
-    queryFn: ({ pageParam }) => getPosts({ cursor: pageParam as string, communityId, authorId }),
-    initialPageParam: undefined,
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) => getPosts({ cursor: pageParam, communityId, authorId }),
+    initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-    initialData: { pages: [{ posts: initialPosts, nextCursor: undefined }], pageParams: [undefined] },
+    initialData: { pages: [{ posts: initialPosts, nextCursor: undefined }], pageParams: [undefined as string | undefined] },
   });
 
   useEffect(() => {
