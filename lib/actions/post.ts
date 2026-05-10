@@ -54,61 +54,69 @@ export async function getPosts({
   authorId?: string;
   sort?: string;
 }): Promise<{ posts: ExtendedPost[], nextCursor: string | undefined }> {
-  let orderBy: Prisma.PostOrderByWithRelationInput | Prisma.PostOrderByWithRelationInput[] = { createdAt: "desc" };
-  
-  if (sort === "top") {
-    orderBy = {
-      votes: {
-        _count: "desc",
-      },
-    };
-  } else if (sort === "trending") {
-    // Basic trending: most comments + votes in last 24h
-    orderBy = [
-      {
-        comments: {
-          _count: "desc",
-        },
-      },
-      {
+  try {
+    let orderBy: Prisma.PostOrderByWithRelationInput | Prisma.PostOrderByWithRelationInput[] = { createdAt: "desc" };
+    
+    if (sort === "top") {
+      orderBy = {
         votes: {
           _count: "desc",
         },
-      },
-    ];
-  }
+      };
+    } else if (sort === "trending") {
+      orderBy = [
+        {
+          comments: {
+            _count: "desc",
+          },
+        },
+        {
+          votes: {
+            _count: "desc",
+          },
+        },
+      ];
+    }
 
-  const posts = await prisma.post.findMany({
-    take: limit + 1,
-    cursor: cursor ? { id: cursor } : undefined,
-    where: {
-      communityId,
-      authorId,
-    },
-    orderBy,
-    include: {
-      author: true,
-      community: true,
-      votes: true,
-      _count: {
-        select: {
-          comments: true,
+    const posts = await prisma.post.findMany({
+      take: limit + 1,
+      cursor: cursor ? { id: cursor } : undefined,
+      where: {
+        communityId,
+        authorId,
+      },
+      orderBy,
+      include: {
+        author: true,
+        community: true,
+        votes: true,
+        _count: {
+          select: {
+            comments: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  let nextCursor: string | undefined = undefined;
-  if (posts.length > limit) {
-    const nextItem = posts.pop();
-    nextCursor = nextItem?.id;
+    let nextCursor: string | undefined = undefined;
+    if (posts.length > limit) {
+      const nextItem = posts.pop();
+      nextCursor = nextItem?.id;
+    }
+
+    return {
+      posts: posts as ExtendedPost[],
+      nextCursor,
+    };
+  } catch (error) {
+    console.error("Error fetching posts:", error);
+    return {
+      posts: [],
+      nextCursor: undefined,
+    };
   }
-
-  return {
-    posts: posts as ExtendedPost[],
-    nextCursor,
-  };
 }
+
 
 export async function votePost({ postId, type }: { postId: string; type: number }) {
   const session = await getServerSession(authOptions);

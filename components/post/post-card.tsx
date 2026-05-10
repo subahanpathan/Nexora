@@ -27,11 +27,12 @@ import { ExtendedPost } from "@/lib/types";
 export function PostCard({ post }: { post: ExtendedPost }) {
   const { data: session } = useSession();
   
-  const initialVotes = post.votes.reduce((acc, vote) => acc + vote.type, 0);
-  const userVote = post.votes.find(v => v.userId === session?.user?.id)?.type || 0;
+  const initialVotes = (post?.votes || []).reduce((acc, vote) => acc + (vote?.type || 0), 0);
+  const userVote = (post?.votes || []).find(v => v.userId === session?.user?.id)?.type || 0;
 
   const [v, setV] = useState<number>(userVote);
   const [voteCount, setVoteCount] = useState(initialVotes);
+
   const [isBookmarked, setIsBookmarked] = useState(false);
 
   const handleVote = async (type: number) => {
@@ -119,20 +120,21 @@ export function PostCard({ post }: { post: ExtendedPost }) {
         <div className="flex-1 p-5 sm:p-6">
           <div className="flex items-center gap-2 text-xs">
             <span
-              className={`h-5 w-5 rounded-md bg-gradient-to-br ${post.community.color || 'from-gray-500 to-gray-700'} ring-1 ring-white/10`}
+              className={`h-5 w-5 rounded-md bg-gradient-to-br ${post?.community?.color || 'from-gray-500 to-gray-700'} ring-1 ring-white/10`}
             />
-            <a href={`/t/${post.community.slug}`} className="font-medium text-white/85 hover:underline">
-              t/{post.community.name}
+            <a href={`/t/${post?.community?.slug || '#'}`} className="font-medium text-white/85 hover:underline">
+              t/{post?.community?.name || 'community'}
             </a>
             <span className="text-white/30">·</span>
             <span className="text-white/55">Posted by</span>
-            <a href={`/u/${post.author.username}`} className="inline-flex items-center gap-1 text-white/85 hover:underline">
-              {post.author.username}
-              {post.author.verified && (
+            <a href={`/u/${post?.author?.username || '#'}`} className="inline-flex items-center gap-1 text-white/85 hover:underline">
+              {post?.author?.username || 'anonymous'}
+              {post?.author?.verified && (
                 <CheckCircle2 className="h-3.5 w-3.5 fill-sky-400/80 text-[#0a0a0f]" />
               )}
             </a>
-            <span className="ml-auto text-white/40">{formatDistanceToNow(new Date(post.createdAt))} ago</span>
+            <span className="ml-auto text-white/40">{post?.createdAt ? formatDistanceToNow(new Date(post.createdAt)) : 'some time'} ago</span>
+
           </div>
 
           {post.hiring && (
@@ -167,7 +169,7 @@ export function PostCard({ post }: { post: ExtendedPost }) {
           )}
 
           <div className="mt-4 flex flex-wrap items-center gap-1 text-xs text-white/60">
-            <ActionBtn icon={<MessageCircle className="h-3.5 w-3.5" />} label={`${post._count.comments} comments`} href={`/post/${post.id}`} />
+            <ActionBtn icon={<MessageCircle className="h-3.5 w-3.5" />} label={`${post?._count?.comments || 0} comments`} href={`/post/${post?.id}`} />
             <ActionBtn icon={<Repeat2 className="h-3.5 w-3.5" />} label="Repost" />
             <ActionBtn icon={<Share2 className="h-3.5 w-3.5" />} label="Share" />
             <ActionBtn 
@@ -178,6 +180,7 @@ export function PostCard({ post }: { post: ExtendedPost }) {
             <button className="ml-auto grid h-8 w-8 place-items-center rounded-lg text-white/45 hover:bg-white/[0.05] hover:text-white">
               <MoreHorizontal className="h-4 w-4" />
             </button>
+
           </div>
         </div>
       </div>

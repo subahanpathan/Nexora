@@ -66,16 +66,22 @@ export async function joinCommunity(communityId: string) {
 }
 
 export async function getCommunities() {
-  return await prisma.community.findMany({
-    include: {
-      _count: {
-        select: { members: true },
+  try {
+    return await prisma.community.findMany({
+      include: {
+        _count: {
+          select: { members: true },
+        },
       },
-    },
-    orderBy: {
-      members: {
-        _count: "desc",
+      orderBy: {
+        members: {
+          _count: "desc",
+        },
       },
-    },
-  });
+    });
+  } catch (error) {
+    console.error("Error fetching communities:", error);
+    return [];
+  }
 }
+

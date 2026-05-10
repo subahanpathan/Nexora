@@ -15,11 +15,23 @@ import { authOptions } from "@/lib/auth-options";
 import Link from "next/link";
 
 export async function RightSidebar() {
-  const session = await getServerSession(authOptions);
-  const [communities, users] = await Promise.all([
-    getRecommendedCommunities(),
-    getRecommendedUsers(),
-  ]);
+  const session = await getServerSession(authOptions).catch(() => null);
+  
+  let communities: any[] = [];
+  let users: any[] = [];
+
+
+  try {
+    const [communitiesData, usersData] = await Promise.all([
+      getRecommendedCommunities(),
+      getRecommendedUsers(),
+    ]);
+    communities = communitiesData || [];
+    users = usersData || [];
+  } catch (error) {
+    console.error("RightSidebar data fetch failed:", error);
+  }
+
 
   return (
     <aside className="sticky top-20 hidden h-[calc(100vh-5rem)] w-[340px] shrink-0 space-y-5 overflow-y-auto pl-2 xl:block scrollbar-hide">
@@ -74,20 +86,21 @@ export async function RightSidebar() {
       >
         {communities.map((c, i) => (
           <div
-            key={c.id}
+            key={c?.id || i}
             className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-white/[0.04]"
           >
             <span className="w-4 text-center text-xs text-white/40">{i + 1}</span>
-            <span className={`h-8 w-8 rounded-lg bg-gradient-to-br ${c.color || 'from-violet-500 to-indigo-500'} ring-1 ring-white/10`} />
+            <span className={`h-8 w-8 rounded-lg bg-gradient-to-br ${c?.color || 'from-violet-500 to-indigo-500'} ring-1 ring-white/10`} />
             <div className="min-w-0 flex-1">
-              <Link href={`/t/${c.slug}`} className="truncate text-sm text-white block hover:text-violet-300">t/{c.name}</Link>
-              <div className="text-[11px] text-white/45">{c._count.members.toLocaleString()} members</div>
+              <Link href={`/t/${c?.slug || '#'}`} className="truncate text-sm text-white block hover:text-violet-300">t/{c?.name || 'community'}</Link>
+              <div className="text-[11px] text-white/45">{(c?._count?.members || 0).toLocaleString()} members</div>
             </div>
-            <Link href={`/t/${c.slug}`} className="rounded-full border border-white/[0.1] bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/80 hover:bg-white/[0.08]">
+            <Link href={`/t/${c?.slug || '#'}`} className="rounded-full border border-white/[0.1] bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/80 hover:bg-white/[0.08]">
               Join
             </Link>
           </div>
         ))}
+
       </SidebarCard>
 
       {/* Suggested creators / network */}
@@ -95,26 +108,27 @@ export async function RightSidebar() {
         title="People to network with"
         icon={<Users className="h-3.5 w-3.5 text-sky-300" />}
       >
-        {users.map((p) => (
+        {users.map((p, i) => (
           <div
-            key={p.id}
+            key={p?.id || i}
             className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-white/[0.04]"
           >
             <div className={`relative h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 ring-1 ring-white/10 flex items-center justify-center font-bold text-[10px] text-white`}>
-              {p.username[0].toUpperCase()}
-              {p.verified && (
+              {p?.username?.[0]?.toUpperCase() || "U"}
+              {p?.verified && (
                 <span className="absolute -bottom-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-[#0a0a0f] ring-1 ring-white/10">
                    <CheckCircle2 className="h-2.5 w-2.5 text-sky-400" />
                 </span>
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <Link href={`/u/${p.username}`} className="truncate text-sm text-white block hover:text-violet-300">{p.username}</Link>
-              <div className="truncate text-[11px] text-white/45">{p.bio || "High-signal builder"}</div>
+              <Link href={`/u/${p?.username || '#'}`} className="truncate text-sm text-white block hover:text-violet-300">{p?.username || 'anonymous'}</Link>
+              <div className="truncate text-[11px] text-white/45">{p?.bio || "High-signal builder"}</div>
             </div>
-            <FollowButton userId={p.id} isFollowingInitial={false} />
+            {p?.id && <FollowButton userId={p.id} isFollowingInitial={false} />}
           </div>
         ))}
+
       </SidebarCard>
 
       {/* Live discussions */}
