@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Sparkles, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { ThreadifyLogo } from "../premium/logo";
+import { NexoraLogo } from "../premium/logo";
 
 interface AuthCardProps {
   title: string;
@@ -36,7 +36,7 @@ export function AuthCard({
         className="w-full max-w-[440px] z-10"
       >
         <div className="flex justify-center mb-8">
-           <ThreadifyLogo />
+           <NexoraLogo />
         </div>
 
         <div className="rounded-[32px] border border-white/[0.06] bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-8 md:p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] backdrop-blur-xl">
@@ -51,7 +51,7 @@ export function AuthCard({
 
           <div className="mt-8 pt-6 border-t border-white/5 text-center">
             <p className="text-xs text-white/30 uppercase tracking-widest font-bold italic mb-4 flex items-center justify-center gap-2">
-               <Sparkles className="h-3 w-3 text-violet-400" /> Threadify <span className="text-violet-500">Secure Access</span>
+               <Sparkles className="h-3 w-3 text-violet-400" /> Nexora <span className="text-violet-500">Secure Access</span>
             </p>
             <p className="text-sm text-white/40">
               {footerText}{" "}

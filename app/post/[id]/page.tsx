@@ -1,19 +1,53 @@
 import { prisma } from "@/lib/prisma";
 import { PostCard } from "@/components/post/post-card";
 import { getComments } from "@/lib/actions/comment";
-import { CommentTree } from "@/components/post/comment-tree";
-import { CommentForm } from "@/components/post/comment-form";
+import { CommentsSection } from "@/components/post/comments-section";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
+import { ExtendedComment } from "@/lib/types";
 
 export default async function PostPage({ params }: { params: { id: string } }) {
   const post = await prisma.post.findUnique({
     where: { id: params.id },
-    include: {
-      author: true,
-      community: true,
-      votes: true,
+    select: {
+      id: true,
+      title: true,
+      content: true,
+      imageUrl: true,
+      imageLabel: true,
+      hiring: true,
+      tag: true,
+      summary: true,
+      createdAt: true,
+      updatedAt: true,
+      authorId: true,
+      communityId: true,
+      author: {
+        select: {
+          id: true,
+          username: true,
+          verified: true,
+          image: true,
+        },
+      },
+      community: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          color: true,
+        },
+      },
+      votes: {
+        select: {
+          id: true,
+          type: true,
+          userId: true,
+          postId: true,
+        },
+      },
       _count: {
         select: { comments: true },
       },
@@ -21,8 +55,6 @@ export default async function PostPage({ params }: { params: { id: string } }) {
   });
 
   if (!post) return notFound();
-
-  const comments = await getComments(post.id);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -35,17 +67,25 @@ export default async function PostPage({ params }: { params: { id: string } }) {
 
       <PostCard post={post} />
 
-      <div className="rounded-3xl border border-white/[0.06] bg-white/[0.02] p-6 sm:p-8 space-y-8">
-        <div>
-          <h2 className="text-xl font-semibold text-white">Discussion</h2>
-          <p className="text-sm text-white/40 mt-1">{post._count.comments} thoughts shared so far</p>
-        </div>
+      <Suspense fallback={<CommentsSkeleton />}>
+        <CommentsSectionServer postId={post.id} />
+      </Suspense>
+    </div>
+  );
+}
 
-        <CommentForm postId={post.id} />
+async function CommentsSectionServer({ postId }: { postId: string }) {
+  const comments = (await getComments(postId)) as ExtendedComment[];
+  return <CommentsSection postId={postId} initialComments={comments} />;
+}
 
-        <div className="space-y-6 pt-6 border-t border-white/5">
-          <CommentTree comments={comments} />
-        </div>
+function CommentsSkeleton() {
+  return (
+    <div className="rounded-3xl border border-white/[0.06] bg-white/[0.02] p-6 sm:p-8">
+      <div className="space-y-4">
+        <div className="h-6 w-36 animate-pulse rounded bg-white/[0.06]" />
+        <div className="h-20 animate-pulse rounded-2xl bg-white/[0.05]" />
+        <div className="h-16 animate-pulse rounded-2xl bg-white/[0.04]" />
       </div>
     </div>
   );

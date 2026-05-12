@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { CommunitySchema } from "@/lib/validators";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 
 export async function createCommunity(data: unknown) {
   const session = await getServerSession(authOptions);
@@ -28,6 +28,7 @@ export async function createCommunity(data: unknown) {
   });
 
   revalidatePath("/communities");
+  revalidateTag("communities", "max");
   return community;
 }
 
@@ -63,22 +64,38 @@ export async function joinCommunity(communityId: string) {
   }
 
   revalidatePath(`/t/${communityId}`);
+  revalidateTag("communities", "max");
 }
 
 export async function getCommunities() {
   try {
-    return await prisma.community.findMany({
-      include: {
-        _count: {
-          select: { members: true },
-        },
-      },
-      orderBy: {
-        members: {
-          _count: "desc",
-        },
-      },
-    });
+    const getCachedCommunities = unstable_cache(
+      async () =>
+        prisma.community.findMany({
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            image: true,
+            banner: true,
+            color: true,
+            createdAt: true,
+            updatedAt: true,
+            _count: {
+              select: { members: true },
+            },
+          },
+          orderBy: {
+            members: {
+              _count: "desc",
+            },
+          },
+        }),
+      ["communities:list"],
+      { revalidate: 120, tags: ["communities"] }
+    );
+    return await getCachedCommunities();
   } catch (error) {
     console.error("Error fetching communities:", error);
     return [];

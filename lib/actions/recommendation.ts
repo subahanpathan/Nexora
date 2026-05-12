@@ -18,10 +18,14 @@ export async function getRecommendedCommunities() {
           }
         }
       } : {},
-      include: {
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        color: true,
         _count: {
-          select: { members: true }
-        }
+          select: { members: true },
+        },
       },
       orderBy: {
         members: {
@@ -52,6 +56,12 @@ export async function getRecommendedUsers() {
           }
         }
       } : {},
+      select: {
+        id: true,
+        username: true,
+        bio: true,
+        verified: true,
+      },
       take: 4,
       orderBy: {
         reputation: "desc"

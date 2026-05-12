@@ -10,12 +10,14 @@ export function FollowButton({ userId, isFollowingInitial }: { userId: string, i
   const [isLoading, setIsLoading] = useState(false);
 
   const handleFollow = async () => {
+    const next = !isFollowing;
+    setIsFollowing(next);
     setIsLoading(true);
     try {
       await followUser(userId);
-      setIsFollowing(!isFollowing);
-      toast.success(isFollowing ? "Unfollowed" : "Following");
+      toast.success(next ? "Following" : "Unfollowed");
     } catch {
+      setIsFollowing(!next);
       toast.error("Failed to update follow status");
     } finally {
       setIsLoading(false);

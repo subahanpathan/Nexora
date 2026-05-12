@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { CommentSchema } from "@/lib/validators";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 export async function createComment(data: unknown) {
   const session = await getServerSession(authOptions);
@@ -42,6 +42,7 @@ export async function createComment(data: unknown) {
   }
 
   revalidatePath(`/post/${validatedData.postId}`);
+  revalidateTag(`comments:${validatedData.postId}`, "max");
   return comment;
 }
 
@@ -51,21 +52,87 @@ export async function getComments(postId: string) {
       postId,
       parentId: null, // Get top level comments first
     },
-    include: {
-      author: true,
-      votes: true,
+    select: {
+      id: true,
+      content: true,
+      createdAt: true,
+      updatedAt: true,
+      postId: true,
+      parentId: true,
+      authorId: true,
+      author: {
+        select: {
+          id: true,
+          username: true,
+          image: true,
+          verified: true,
+        },
+      },
+      votes: {
+        select: {
+          id: true,
+          type: true,
+          userId: true,
+          commentId: true,
+          postId: true,
+        },
+      },
       replies: {
-        include: {
-          author: true,
-          votes: true,
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          updatedAt: true,
+          postId: true,
+          parentId: true,
+          authorId: true,
+          author: {
+            select: {
+              id: true,
+              username: true,
+              image: true,
+              verified: true,
+            },
+          },
+          votes: {
+            select: {
+              id: true,
+              type: true,
+              userId: true,
+              commentId: true,
+              postId: true,
+            },
+          },
           replies: {
-            include: {
-              author: true,
-              votes: true,
-            }
-          }
-        }
-      }
+            select: {
+              id: true,
+              content: true,
+              createdAt: true,
+              updatedAt: true,
+              postId: true,
+              parentId: true,
+              authorId: true,
+              author: {
+                select: {
+                  id: true,
+                  username: true,
+                  image: true,
+                  verified: true,
+                },
+              },
+              votes: {
+                select: {
+                  id: true,
+                  type: true,
+                  userId: true,
+                  commentId: true,
+                  postId: true,
+                },
+              },
+            },
+          },
+        },
+      },
     },
     orderBy: {
       createdAt: "desc",

@@ -5,8 +5,7 @@ import {
   Radio,
   Users,
   ArrowUpRight,
-  Hash,
-  Globe,
+  Plus,
 } from "lucide-react";
 import { getRecommendedCommunities, getRecommendedUsers } from "@/lib/actions/recommendation";
 import { FollowButton } from "@/components/user/follow-button";
@@ -14,11 +13,26 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import Link from "next/link";
 
+type RecommendedCommunity = {
+  id?: string;
+  slug?: string;
+  name?: string;
+  color?: string | null;
+  _count?: { members?: number };
+};
+
+type RecommendedUser = {
+  id?: string;
+  username?: string | null;
+  bio?: string | null;
+  verified?: boolean;
+};
+
 export async function RightSidebar() {
   const session = await getServerSession(authOptions).catch(() => null);
   
-  let communities: any[] = [];
-  let users: any[] = [];
+  let communities: RecommendedCommunity[] = [];
+  let users: RecommendedUser[] = [];
 
 
   try {
@@ -34,35 +48,35 @@ export async function RightSidebar() {
 
 
   return (
-    <aside className="sticky top-20 hidden h-[calc(100vh-5rem)] w-[340px] shrink-0 space-y-5 overflow-y-auto pl-2 xl:block scrollbar-hide">
+    <aside className="sticky top-20 hidden h-[calc(100vh-5rem)] w-[360px] shrink-0 space-y-6 overflow-y-auto pl-4 xl:block scrollbar-hide">
       {/* Profile / Reputation */}
-      {session ? (
-        <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-white/[0.05] to-white/[0.01] p-5">
-          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-violet-500/20 blur-3xl" />
-          <div className="relative flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 ring-2 ring-white/10 flex items-center justify-center font-bold text-white text-lg">
+      {session?.user ? (
+        <div className="relative overflow-hidden rounded-[2rem] border border-white/5 bg-white/[0.02] p-6">
+          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-violet-600/20 blur-3xl" />
+          <div className="relative flex items-center gap-4">
+            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-500 border border-white/10 shadow-lg flex items-center justify-center font-bold text-white text-xl">
               {session.user.name?.[0].toUpperCase() || "U"}
             </div>
             <div>
-              <div className="flex items-center gap-1.5 text-sm font-medium text-white">
-                {session.user.name}
-                <CheckCircle2 className="h-3.5 w-3.5 fill-sky-400/80 text-[#0a0a0f]" />
+              <div className="flex items-center gap-2 text-base font-bold text-white tracking-tight">
+                {session.user.name || "Nexora Member"}
+                <CheckCircle2 className="h-4 w-4 text-violet-400" />
               </div>
-              <div className="text-xs text-white/55">Member · @{session.user.name?.toLowerCase().replace(/ /g, "")}</div>
+              <div className="text-[11px] font-bold uppercase tracking-widest text-white/30">Member · Node Sync Active</div>
             </div>
           </div>
-          <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+          <div className="mt-6 grid grid-cols-3 gap-3">
             {[
               { v: "1.2k", l: "Rep" },
               { v: "12", l: "Posts" },
-              { v: "84", l: "Followers" },
+              { v: "84", l: "Nodes" },
             ].map((s) => (
               <div
                 key={s.l}
-                className="rounded-lg border border-white/[0.06] bg-white/[0.02] py-2"
+                className="rounded-2xl border border-white/5 bg-white/[0.02] py-3 flex flex-col items-center"
               >
-                <div className="text-sm font-semibold text-white">{s.v}</div>
-                <div className="text-[10px] uppercase tracking-wider text-white/40">
+                <div className="text-sm font-black text-white">{s.v}</div>
+                <div className="text-[9px] font-black uppercase tracking-widest text-white/20 mt-1">
                   {s.l}
                 </div>
               </div>
@@ -70,71 +84,66 @@ export async function RightSidebar() {
           </div>
         </div>
       ) : (
-        <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 p-6 text-center">
-           <h3 className="text-sm font-semibold text-white">Join the ecosystem</h3>
-           <p className="mt-2 text-xs text-white/50 leading-relaxed">Connect with top-tier builders and grow your professional signal.</p>
-           <Link href="/register" className="mt-4 block w-full rounded-xl bg-white py-2.5 text-xs font-bold text-black hover:-translate-y-0.5 transition-transform">
-              Get Started
+        <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-violet-600/10 via-fuchsia-500/5 to-transparent p-8 text-center">
+           <div className="mx-auto h-12 w-12 rounded-2xl bg-white flex items-center justify-center mb-4">
+              <Plus className="h-6 w-6 text-black" />
+           </div>
+           <h3 className="text-lg font-bold text-white tracking-tight">Join Nexora</h3>
+           <p className="mt-2 text-xs text-white/40 leading-relaxed font-medium">Connect with top-tier builders and grow your professional signal.</p>
+           <Link href="/register" className="mt-6 block w-full rounded-2xl bg-white py-3.5 text-xs font-black uppercase tracking-widest text-black hover:-translate-y-1 transition-all shadow-xl shadow-white/5">
+              Sync Account
            </Link>
         </div>
       )}
 
       {/* Trending communities */}
-      <SidebarCard
-        title="Trending communities"
-        icon={<Flame className="h-3.5 w-3.5 text-rose-300" />}
-      >
-        {communities.map((c, i) => (
+      <SidebarCard title="Trending Nodes" icon={<Flame className="h-4 w-4 text-rose-400" />}>
+        {communities.slice(0, 5).map((c, i) => (
           <div
             key={c?.id || i}
-            className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-white/[0.04]"
+            className="flex items-center gap-4 rounded-2xl px-3 py-3 transition-all hover:bg-white/[0.03] group"
           >
-            <span className="w-4 text-center text-xs text-white/40">{i + 1}</span>
-            <span className={`h-8 w-8 rounded-lg bg-gradient-to-br ${c?.color || 'from-violet-500 to-indigo-500'} ring-1 ring-white/10`} />
+            <span className="w-4 text-[10px] font-black text-white/10 group-hover:text-white/30">{i + 1}</span>
+            <span className={`h-10 w-10 rounded-2xl bg-gradient-to-br ${c?.color || 'from-violet-600 to-indigo-500'} border border-white/10 group-hover:scale-110 transition-transform`} />
             <div className="min-w-0 flex-1">
-              <Link href={`/t/${c?.slug || '#'}`} className="truncate text-sm text-white block hover:text-violet-300">t/{c?.name || 'community'}</Link>
-              <div className="text-[11px] text-white/45">{(c?._count?.members || 0).toLocaleString()} members</div>
+              <Link href={`/t/${c?.slug || '#'}`} className="truncate text-sm font-bold text-white block hover:text-violet-300">t/{c?.name || 'community'}</Link>
+              <div className="text-[10px] font-bold text-white/20 uppercase tracking-widest">{(c?._count?.members || 0).toLocaleString()} synced</div>
             </div>
-            <Link href={`/t/${c?.slug || '#'}`} className="rounded-full border border-white/[0.1] bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/80 hover:bg-white/[0.08]">
+            <Link href={`/t/${c?.slug || '#'}`} className="rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[10px] font-bold text-white/80 hover:bg-white/[0.1] hover:text-white transition-all">
               Join
             </Link>
           </div>
         ))}
-
       </SidebarCard>
 
       {/* Suggested creators / network */}
-      <SidebarCard
-        title="People to network with"
-        icon={<Users className="h-3.5 w-3.5 text-sky-300" />}
-      >
-        {users.map((p, i) => (
+      <SidebarCard title="Network Signals" icon={<Users className="h-4 w-4 text-sky-400" />}>
+        {users.slice(0, 5).map((p, i) => (
           <div
             key={p?.id || i}
-            className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-white/[0.04]"
+            className="flex items-center gap-4 rounded-2xl px-3 py-3 transition-all hover:bg-white/[0.03] group"
           >
-            <div className={`relative h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 ring-1 ring-white/10 flex items-center justify-center font-bold text-[10px] text-white`}>
+            <div className="relative h-11 w-11 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-center font-bold text-sm text-white group-hover:border-white/20 transition-all">
               {p?.username?.[0]?.toUpperCase() || "U"}
               {p?.verified && (
-                <span className="absolute -bottom-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-[#0a0a0f] ring-1 ring-white/10">
-                   <CheckCircle2 className="h-2.5 w-2.5 text-sky-400" />
+                <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-lg bg-[#030303] border border-white/10 flex items-center justify-center">
+                   <CheckCircle2 className="h-3 w-3 text-violet-400" />
                 </span>
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <Link href={`/u/${p?.username || '#'}`} className="truncate text-sm text-white block hover:text-violet-300">{p?.username || 'anonymous'}</Link>
-              <div className="truncate text-[11px] text-white/45">{p?.bio || "High-signal builder"}</div>
+              <Link href={`/u/${p?.username || '#'}`} className="truncate text-sm font-bold text-white block hover:text-violet-300 tracking-tight">{p?.username || 'anonymous'}</Link>
+              <div className="truncate text-[10px] font-bold text-white/20 uppercase tracking-widest">{p?.bio || "Node Creator"}</div>
             </div>
             {p?.id && <FollowButton userId={p.id} isFollowingInitial={false} />}
           </div>
         ))}
-
       </SidebarCard>
 
       {/* Live discussions */}
       <SidebarCard
-        title="Live discussions"
-        icon={<Radio className="h-3.5 w-3.5 text-rose-400" />}
+        title="Live Signal"
+        icon={<Radio className="h-4 w-4 text-rose-500 animate-pulse" />}
       >
         {[
           { t: "AI-native social: hype or reality?", c: "1.2k" },
@@ -143,81 +152,30 @@ export async function RightSidebar() {
         ].map((d) => (
           <div
             key={d.t}
-            className="flex items-start gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-white/[0.04]"
+            className="flex items-start gap-4 rounded-2xl px-3 py-4 transition-all hover:bg-white/[0.03] group"
           >
-            <span className="relative mt-1.5 h-2 w-2 shrink-0 rounded-full bg-rose-400">
-              <span className="absolute inset-0 animate-ping rounded-full bg-rose-400/70" />
+            <span className="relative mt-1.5 h-2 w-2 shrink-0 rounded-full bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,1)]">
+              <span className="absolute inset-0 animate-ping rounded-full bg-rose-500/70" />
             </span>
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm text-white">{d.t}</div>
-              <div className="text-[11px] text-white/45">{d.c} listening now</div>
+              <div className="text-sm font-bold text-white leading-tight tracking-tight group-hover:text-violet-200 transition-colors">{d.t}</div>
+              <div className="text-[10px] font-bold text-white/20 uppercase tracking-widest mt-1.5">{d.c} synced</div>
             </div>
-            <ArrowUpRight className="h-3.5 w-3.5 text-white/40" />
+            <ArrowUpRight className="h-4 w-4 text-white/10 group-hover:text-white transition-all" />
           </div>
         ))}
       </SidebarCard>
 
-      {/* Trending topics */}
-      <SidebarCard
-        title="Trending topics"
-        icon={<Hash className="h-3.5 w-3.5 text-violet-300" />}
-      >
-        <div className="flex flex-wrap gap-1.5">
-          {[
-            "#design-systems",
-            "#rag",
-            "#founders",
-            "#typescript",
-            "#agents",
-            "#hiring",
-            "#open-source",
-            "#ux",
-          ].map((t) => (
-            <span
-              key={t}
-              className="inline-flex items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[11px] text-white/75 transition-colors hover:bg-white/[0.07] hover:text-white cursor-pointer"
-            >
-              {t}
-            </span>
-          ))}
+      <div className="px-6 pb-12">
+        <div className="flex flex-wrap gap-x-4 gap-y-2 text-[10px] font-bold uppercase tracking-widest text-white/20">
+          <a href="#" className="hover:text-white transition-colors">Vision</a>
+          <a href="#" className="hover:text-white transition-colors">Privacy</a>
+          <a href="#" className="hover:text-white transition-colors">Nodes</a>
         </div>
-      </SidebarCard>
-
-      {/* Online users */}
-      <SidebarCard
-        title="Online now"
-        icon={<Globe className="h-3.5 w-3.5 text-emerald-300" />}
-      >
-        <div className="flex items-center gap-3">
-          <div className="flex -space-x-2">
-            {[
-              "from-amber-400 to-rose-500",
-              "from-emerald-400 to-cyan-500",
-              "from-indigo-400 to-violet-500",
-              "from-fuchsia-500 to-rose-500",
-              "from-sky-400 to-indigo-500",
-            ].map((g, i) => (
-              <div
-                key={i}
-                className={`h-7 w-7 rounded-full bg-gradient-to-br ${g} ring-2 ring-[#0a0a0f]`}
-              />
-            ))}
-          </div>
-          <div className="text-xs text-white/60">
-            <span className="font-medium text-white">2,418</span> people online
-          </div>
-        </div>
-      </SidebarCard>
-
-      <div className="px-2 pb-6 text-[11px] text-white/35">
-        <div className="flex flex-wrap gap-x-3 gap-y-1">
-          <a href="#" className="hover:text-white/70">About</a>
-          <a href="#" className="hover:text-white/70">Privacy</a>
-          <a href="#" className="hover:text-white/70">Terms</a>
-        </div>
-        <div className="mt-2">© 2026 Threadify Labs</div>
+        <div className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/10">© 2026 Nexora Network</div>
       </div>
     </aside>
+
   );
 }
 

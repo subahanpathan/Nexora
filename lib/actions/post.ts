@@ -5,7 +5,7 @@ import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { PostSchema } from "@/lib/validators";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 
 import { ExtendedPost } from "@/lib/types";
 
@@ -38,6 +38,7 @@ export async function createPost(data: unknown) {
   });
 
   revalidatePath("/");
+  revalidateTag("posts", "max");
   return post;
 }
 
@@ -55,6 +56,69 @@ export async function getPosts({
   sort?: string;
 }): Promise<{ posts: ExtendedPost[], nextCursor: string | undefined }> {
   try {
+    if (!cursor && !communityId && !authorId && sort === "new" && limit === 10) {
+      const getCachedHomePosts = unstable_cache(
+        async () =>
+          prisma.post.findMany({
+            take: 11,
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              title: true,
+              content: true,
+              imageUrl: true,
+              imageLabel: true,
+              hiring: true,
+              tag: true,
+              summary: true,
+              createdAt: true,
+              updatedAt: true,
+              authorId: true,
+              communityId: true,
+              author: {
+                select: {
+                  id: true,
+                  username: true,
+                  verified: true,
+                  image: true,
+                },
+              },
+              community: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  color: true,
+                },
+              },
+              votes: {
+                select: {
+                  id: true,
+                  type: true,
+                  userId: true,
+                  postId: true,
+                },
+              },
+              _count: {
+                select: {
+                  comments: true,
+                },
+              },
+            },
+          }),
+        ["posts:home"],
+        { revalidate: 60, tags: ["posts"] }
+      );
+      const homePosts = await getCachedHomePosts();
+      let nextCursor: string | undefined = undefined;
+      const posts = [...homePosts];
+      if (posts.length > limit) {
+        const nextItem = posts.pop();
+        nextCursor = nextItem?.id;
+      }
+      return { posts: posts as ExtendedPost[], nextCursor };
+    }
+
     let orderBy: Prisma.PostOrderByWithRelationInput | Prisma.PostOrderByWithRelationInput[] = { createdAt: "desc" };
     
     if (sort === "top") {
@@ -86,10 +150,43 @@ export async function getPosts({
         authorId,
       },
       orderBy,
-      include: {
-        author: true,
-        community: true,
-        votes: true,
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        imageUrl: true,
+        imageLabel: true,
+        hiring: true,
+        tag: true,
+        summary: true,
+        createdAt: true,
+        updatedAt: true,
+        authorId: true,
+        communityId: true,
+        author: {
+          select: {
+            id: true,
+            username: true,
+            verified: true,
+            image: true,
+          },
+        },
+        community: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            color: true,
+          },
+        },
+        votes: {
+          select: {
+            id: true,
+            type: true,
+            userId: true,
+            postId: true,
+          },
+        },
         _count: {
           select: {
             comments: true,
@@ -153,4 +250,5 @@ export async function votePost({ postId, type }: { postId: string; type: number 
   }
 
   revalidatePath("/");
+  revalidateTag("posts", "max");
 }

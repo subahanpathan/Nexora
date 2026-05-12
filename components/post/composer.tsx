@@ -8,6 +8,7 @@ import {
   Send, 
   X,
   Loader2,
+  ChevronDown,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { createPost } from "@/lib/actions/post";
@@ -40,14 +41,14 @@ export function Composer({ communities }: { communities: Community[] }) {
     setIsSubmitting(true);
     try {
       await createPost({ title, content, communityId, imageUrl });
-      toast.success("Post created successfully");
+      toast.success("Signal transmitted successfully");
       setTitle("");
       setContent("");
       setImageUrl("");
       setIsFocused(false);
       router.refresh();
     } catch {
-      toast.error("Failed to create post");
+      toast.error("Transmission failed");
     } finally {
       setIsSubmitting(false);
     }
@@ -56,31 +57,35 @@ export function Composer({ communities }: { communities: Community[] }) {
   return (
     <motion.div
       layout
-      className={`mt-4 rounded-2xl border transition-all duration-300 ${
+      className={`mt-6 rounded-[2rem] border transition-all duration-500 ${
         isFocused
-          ? "border-violet-500/40 bg-white/[0.04] shadow-[0_0_30px_-10px_rgba(139,92,246,0.3)]"
-          : "border-white/[0.06] bg-gradient-to-br from-white/[0.04] to-white/[0.01]"
-      } p-4`}
+          ? "border-violet-500/40 bg-[#07070b]/80 shadow-[0_30px_60px_-15px_rgba(139,92,246,0.2)] backdrop-blur-2xl"
+          : "border-white/[0.06] bg-[#07070b]/40 backdrop-blur-sm hover:border-white/20"
+      } p-6`}
     >
-      <div className="flex items-start gap-3">
-        <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-amber-400 via-rose-400 to-fuchsia-500" />
+      <div className="flex items-start gap-4">
+        <div className="h-12 w-12 shrink-0 rounded-2xl bg-gradient-to-br from-violet-600 via-indigo-500 to-fuchsia-500 border border-white/10 shadow-lg flex items-center justify-center font-bold text-white text-lg">
+           {session?.user?.name?.[0].toUpperCase() || "N"}
+        </div>
         <div className="flex-1">
           {isFocused && (
-            <input
+            <motion.input
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Title of your thread..."
-              className="w-full bg-transparent text-lg font-semibold text-white placeholder:text-white/20 outline-none mb-2"
+              placeholder="Signal Title"
+              className="w-full bg-transparent text-xl font-bold text-white placeholder:text-white/10 outline-none mb-4 tracking-tight"
               autoFocus
             />
           )}
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Share a thought, drop a link, start a thread…"
-            className="w-full min-h-[40px] bg-transparent text-sm text-white placeholder:text-white/40 outline-none resize-none transition-all"
+            placeholder="What's the signal?"
+            className="w-full min-h-[40px] bg-transparent text-[16px] text-white/80 placeholder:text-white/20 outline-none resize-none transition-all custom-scrollbar"
             onFocus={() => setIsFocused(true)}
-            rows={isFocused ? 4 : 1}
+            rows={isFocused ? 6 : 1}
           />
           
           <AnimatePresence>
@@ -89,41 +94,46 @@ export function Composer({ communities }: { communities: Community[] }) {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="mt-3 space-y-3 overflow-hidden"
+                className="mt-6 space-y-6 overflow-hidden"
               >
-                <div className="flex flex-wrap items-center gap-2">
-                   <select 
-                      value={communityId}
-                      onChange={(e) => setCommunityId(e.target.value)}
-                      className="bg-white/[0.05] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-violet-500/50"
-                   >
-                      <option value="" disabled className="bg-[#0a0a0f]">Select Community</option>
-                      {communities.map(c => (
-                        <option key={c.id} value={c.id} className="bg-[#0a0a0f]">{c.name}</option>
-                      ))}
-                   </select>
+                <div className="flex flex-wrap items-center gap-3">
+                   <div className="relative">
+                      <select 
+                         value={communityId}
+                         onChange={(e) => setCommunityId(e.target.value)}
+                         className="appearance-none bg-white/[0.03] border border-white/5 rounded-xl px-5 py-2.5 text-[11px] font-bold uppercase tracking-widest text-white/60 outline-none focus:border-violet-500/50 hover:bg-white/[0.05] transition-all pr-10"
+                      >
+                         <option value="" disabled className="bg-[#030303]">Select Node</option>
+                         {communities.map(c => (
+                           <option key={c.id} value={c.id} className="bg-[#030303]">{c.name}</option>
+                         ))}
+                      </select>
+                      <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+                         <ChevronDown className="h-3 w-3 text-white/20" />
+                      </div>
+                   </div>
 
                    <div className="flex-1" />
                    
                    <button 
                       onClick={() => setIsFocused(false)}
-                      className="p-2 text-white/30 hover:text-white transition-colors"
+                      className="h-10 w-10 rounded-xl flex items-center justify-center text-white/10 hover:text-white hover:bg-white/[0.05] transition-all"
                    >
-                      <X className="h-4 w-4" />
+                      <X className="h-5 w-5" />
                    </button>
                 </div>
 
-                <div className="flex items-center gap-2 border-t border-white/5 pt-3">
-                  <ComposerChip icon={<ImageIcon className="h-3.5 w-3.5" />} label="Media" onClick={() => {}} />
-                  <ComposerChip icon={<Sparkles className="h-3.5 w-3.5" />} label="AI assist" onClick={() => {}} />
+                <div className="flex items-center gap-3 border-t border-white/5 pt-6">
+                  <ComposerChip icon={<ImageIcon className="h-4 w-4" />} label="Attach" onClick={() => {}} />
+                  <ComposerChip icon={<Sparkles className="h-4 w-4" />} label="AI Optimize" onClick={() => {}} />
                   
                   <button 
                     disabled={isSubmitting}
                     onClick={handleSubmit}
-                    className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 px-5 py-2 text-xs font-bold text-white shadow-[0_8px_24px_-8px_rgba(139,92,246,0.7)] hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:translate-y-0"
+                    className="ml-auto inline-flex items-center gap-2.5 rounded-2xl bg-white px-8 py-3.5 text-[11px] font-black uppercase tracking-widest text-black shadow-xl shadow-white/5 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:scale-100"
                   >
-                    {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                    {isSubmitting ? "Posting..." : "Post Thread"}
+                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    {isSubmitting ? "Transmitting..." : "Transmit"}
                   </button>
                 </div>
               </motion.div>
@@ -139,10 +149,11 @@ function ComposerChip({ icon, label, onClick }: { icon: React.ReactNode; label: 
   return (
     <button 
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-white/65 transition-colors hover:bg-white/[0.06] hover:text-white"
+      className="inline-flex items-center gap-2 rounded-xl border border-white/[0.05] bg-white/[0.01] px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-white/30 transition-all hover:bg-white/[0.05] hover:text-white"
     >
       {icon}
       {label}
     </button>
   );
 }
+

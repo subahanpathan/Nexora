@@ -6,7 +6,17 @@ import { createComment } from "@/lib/actions/comment";
 import { toast } from "sonner";
 import { Send, Loader2 } from "lucide-react";
 
-export function CommentForm({ postId, parentId, onCancel }: { postId: string; parentId?: string; onCancel?: () => void }) {
+export function CommentForm({
+  postId,
+  parentId,
+  onCancel,
+  onOptimisticAdd,
+}: {
+  postId: string;
+  parentId?: string;
+  onCancel?: () => void;
+  onOptimisticAdd?: (content: string) => (() => void) | void;
+}) {
   const { data: session } = useSession();
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -19,6 +29,7 @@ export function CommentForm({ postId, parentId, onCancel }: { postId: string; pa
     }
     if (!content.trim()) return;
 
+    const optimisticRollback = onOptimisticAdd?.(content.trim());
     setIsSubmitting(true);
     try {
       await createComment({ content, postId, parentId });
@@ -26,6 +37,7 @@ export function CommentForm({ postId, parentId, onCancel }: { postId: string; pa
       setContent("");
       if (onCancel) onCancel();
     } catch {
+      optimisticRollback?.();
       toast.error("Failed to post comment");
     } finally {
       setIsSubmitting(false);

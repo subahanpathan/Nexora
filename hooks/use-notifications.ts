@@ -35,7 +35,12 @@ export function useNotifications() {
 
     init();
 
-    const interval = setInterval(init, 10000);
+    const interval = setInterval(() => {
+      // Avoid polling while tab is hidden to reduce server load.
+      if (document.visibilityState === "visible") {
+        init();
+      }
+    }, 30000);
     return () => {
       mounted = false;
       clearInterval(interval);
